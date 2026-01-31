@@ -8,14 +8,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Restore NuGet packages
+        run: nuget restore *.sln
+
       - name: Build with MSBuild
-        run: msbuild JoyConPlusPlus.sln /p:Configuration=Release /p:Platform=x64
+        run: msbuild *.sln /p:Configuration=Release /p:Platform=x64
 
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: JoyConPlusPlus-Exe
-          path: x64/Release/
+          path: |
+            **/bin/Release/
+            **/x64/Release/
