@@ -8,14 +8,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 1. 調理器具（HIDAPI）を自動インストール
+      - name: Install HIDAPI via vcpkg
+        run: vcpkg install hidapi:x64-windows
+
       - name: Setup Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # ここが魔法の1行です！
+        # 2. コンパイラに「HIDAPIの場所」を教えてあげます
         run: |
-          cl.exe /EHsc /O2 /std:c++17 JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe /link windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib
+          cl.exe /EHsc /O2 /std:c++17 ^
+          -I"C:/vcpkg/installed/x64-windows/include" ^
+          JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe ^
+          /link /LIBPATH:"C:/vcpkg/installed/x64-windows/lib" ^
+          hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib
 
       - name: Upload result
         uses: actions/upload-artifact@v4
