@@ -15,10 +15,16 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Restore NuGet packages
-        run: nuget restore *.sln
+        # ここを「どこに隠れていても見つける」命令に変えました
+        run: |
+          $sln = Get-ChildItem -Recurse -Filter *.sln | Select-Object -ExpandProperty FullName -First 1
+          nuget restore "$sln"
 
       - name: Build with MSBuild
-        run: msbuild *.sln /p:Configuration=Release /p:Platform=x64
+        # ここも「どこに隠れていても見つける」命令です
+        run: |
+          $sln = Get-ChildItem -Recurse -Filter *.sln | Select-Object -ExpandProperty FullName -First 1
+          msbuild "$sln" /p:Configuration=Release /p:Platform=x64
 
       - name: Upload result
         uses: actions/upload-artifact@v4
@@ -27,3 +33,4 @@ jobs:
           path: |
             **/bin/Release/
             **/x64/Release/
+            **/*.exe
