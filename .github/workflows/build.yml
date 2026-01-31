@@ -8,15 +8,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 大工さんに「道具箱」を開けさせるステップ
       - name: Setup Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # これで cl.exe が見つかるようになります
+        # モード指定「/std:c++17」を追加しました！
         run: |
-          cl.exe /EHsc /O2 *.cpp /Fe:JoyConPlusPlus.exe
+          cl.exe /EHsc /O2 /std:c++17 *.cpp /Fe:JoyConPlusPlus.exe
 
       - name: Upload result
         uses: actions/upload-artifact@v4
