@@ -8,8 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install HIDAPI via vcpkg
-        # vcpkg.jsonを使わず、直接x64版をインストールします
+      # 1. GitHub公式の方法でvcpkgとHIDAPIをセットアップ
+      - name: Setup vcpkg
         run: vcpkg install hidapi:x64-windows
 
       - name: Setup Developer Command Prompt
@@ -17,12 +17,12 @@ jobs:
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # ポイント：$VCPKG_INSTALLATION_ROOT ではなく、カレントディレクトリの「vcpkg_installed」を見に行きます
+        # 2. 変数を使わず、GitHub環境の絶対パスを直接指定して確実に認識させます
         run: |
           cl.exe /EHsc /O2 /std:c++17 ^
-          -I"vcpkg_installed/x64-windows/include" ^
+          -I"D:/a/JoyConPlusPlus/JoyConPlusPlus/vcpkg_installed/x64-windows/include" ^
           JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe ^
-          /link /LIBPATH:"vcpkg_installed/x64-windows/lib" ^
+          /link /LIBPATH:"D:/a/JoyConPlusPlus/JoyConPlusPlus/vcpkg_installed/x64-windows/lib" ^
           hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib
 
       - name: Upload result
