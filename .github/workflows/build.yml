@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 調理器具（HIDAPI）を自動インストール
+      # 1. 道具（HIDAPI）をインストール
       - name: Install HIDAPI via vcpkg
         run: vcpkg install hidapi:x64-windows
 
@@ -17,12 +17,12 @@ jobs:
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # 2. コンパイラに「HIDAPIの場所」を教えてあげます
+        # 2. VCPKG_INSTALLATION_ROOT という魔法の言葉を使って場所を教えます
         run: |
           cl.exe /EHsc /O2 /std:c++17 ^
-          -I"C:/vcpkg/installed/x64-windows/include" ^
+          -I"%VCPKG_INSTALLATION_ROOT%\installed\x64-windows\include" ^
           JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe ^
-          /link /LIBPATH:"C:/vcpkg/installed/x64-windows/lib" ^
+          /link /LIBPATH:"%VCPKG_INSTALLATION_ROOT%\installed\x64-windows\lib" ^
           hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib
 
       - name: Upload result
