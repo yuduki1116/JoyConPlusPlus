@@ -14,23 +14,28 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Restore NuGet packages
-        # ここを「どこに隠れていても見つける」命令に変えました
+      - name: Find and Build
+        shell: pwsh
         run: |
-          $sln = Get-ChildItem -Recurse -Filter *.sln | Select-Object -ExpandProperty FullName -First 1
-          nuget restore "$sln"
-
-      - name: Build with MSBuild
-        # ここも「どこに隠れていても見つける」命令です
-        run: |
-          $sln = Get-ChildItem -Recurse -Filter *.sln | Select-Object -ExpandProperty FullName -First 1
-          msbuild "$sln" /p:Configuration=Release /p:Platform=x64
+          # 全フォルダから .sln を本気で探す
+          $slnFile = Get-ChildItem -Recurse -Filter *.sln | Select-Object -First 1
+          
+          if ($null -eq $slnFile) {
+            Write-Error "設計図 (.sln) がどこにも見つかりませんでした！リポジトリの中身が空っぽかもしれません。"
+            exit 1
+          }
+          
+          Write-Host "設計図を発見しました: $($slnFile.FullName)"
+          
+          # 復元とビルドを一気に実行
+          nuget restore "$($slnFile.FullName)"
+          msbuild "$($slnFile.FullName)" /p:Configuration=Release /p:Platform=x64
 
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: JoyConPlusPlus-Exe
           path: |
-            **/bin/Release/
-            **/x64/Release/
+            **/bin/Release/**/*.exe
+            **/x64/Release/**/*.exe
             **/*.exe
