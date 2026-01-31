@@ -8,12 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
+      # 大工さんに「道具箱」を開けさせるステップ
+      - name: Setup Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Compile CPP files
+      - name: Compile JoyConPlusPlus
         shell: cmd
-        # 設計図がないなら、直接コンパイルして無理やり .exe を作る命令
+        # これで cl.exe が見つかるようになります
         run: |
           cl.exe /EHsc /O2 *.cpp /Fe:JoyConPlusPlus.exe
 
