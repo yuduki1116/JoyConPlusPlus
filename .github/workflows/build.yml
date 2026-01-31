@@ -13,9 +13,9 @@ jobs:
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # モード指定「/std:c++17」を追加しました！
+        # /link 以降に、必要な部品（.lib）をすべて詰め込みました！
         run: |
-          cl.exe /EHsc /O2 /std:c++17 *.cpp /Fe:JoyConPlusPlus.exe
+          cl.exe /EHsc /O2 /std:c++17 *.cpp /Fe:JoyConPlusPlus.exe /link windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib
 
       - name: Upload result
         uses: actions/upload-artifact@v4
