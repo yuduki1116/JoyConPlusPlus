@@ -8,26 +8,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. vcpkgを「マニフェストモード」で準備
-      - name: Install HIDAPI
+      - name: Install HIDAPI via vcpkg
+        # 確実にx64-windowsを指定し、インストールを強制
         run: vcpkg install hidapi:x64-windows
 
       - name: Setup Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Compile JoyConPlusPlus
-        shell: cmd
-        # ポイント：vcpkgの「integrate install」という機能を使って、
-        # コンパイラが自動的に include フォルダを見つけるように仕向けます。
+      - name: Compile JoyConPlusPlus (Complex Linkage Strategy)
+        shell: pwsh
         run: |
-          vcpkg integrate install
-          cl.exe /EHsc /O2 /std:c++17 ^
-          JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe ^
-          /link /LIBPATH:"C:/vcpkg/installed/x64-windows/lib" ^
-          hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib
+          # 1. vcpkgが実際にどこにインストールされたかを動的に特定
+          $VCPKG_INSTALLED_DIR = "C:\vcpkg\installed\x64-windows"
+          $INC_PATH = Join-Path $VCPKG_INSTALLED_DIR "include"
+          $LIB_PATH = Join-Path $VCPKG_INSTALLED_DIR "lib"
+          
+          # 2. ファイルの存在確認（ここで落ちるなら環境が異常）
+          if (-not (Test-Path "$INC_PATH\hidapi.h")) { 
+            Write-Error "HIDAPI header not found at $INC_PATH"; exit 1 
+          }
 
-      - name: Upload result
+          # 3. 複雑なフラグ構成でコンパイル実行
+          # -I はインクルード探索。-D はプリプロセッサ（UNICODE対応）
+          # /MT ではなくデフォルトの /MD (vcpkgの標準) を想定
+          & cl.exe /EHsc /O2 /std:c++17 /W3 /utf-8 `
+            -I"$INC_PATH" `
+            JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe `
+            /link /LIBPATH:"$LIB_PATH" `
+            hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib `
+            /OPT:REF /OPT:ICF
+          
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JoyConPlusPlus-Exe
+          name: JoyConPlusPlus-x64
           path: ./*.exe
