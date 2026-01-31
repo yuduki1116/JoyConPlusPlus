@@ -8,20 +8,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Windowsの最新コンパイル環境（道具箱）を準備
       - name: Setup Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Compile JoyConPlusPlus
         shell: cmd
-        # ポイント：
-        # 1. *.cpp でフォルダ内の全ファイルを対象に
-        # 2. /std:c++17 で最新モード
-        # 3. /link 以降でWindowsのBluetoothやシステム部品を合体
+        # ここが魔法の1行です！
         run: |
-          cl.exe /EHsc /O2 /std:c++17 *.cpp /Fe:JoyConPlusPlus.exe /link windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib
+          cl.exe /EHsc /O2 /std:c++17 JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe /link windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib
 
-      # 成功したらお宝（.exe）をサイト上にアップロード
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
