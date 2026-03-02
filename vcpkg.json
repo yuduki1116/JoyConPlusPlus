@@ -1,0 +1,7 @@
+{
+  "name": "joyconplusplus",
+  "version-string": "0.1",
+  "dependencies": [
+    "hidapi"
+  ]
+}
