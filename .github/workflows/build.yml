@@ -2,9 +2,9 @@ name: Build JoyConPlusPlus
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -12,39 +12,44 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-    - name: Setup MSVC Dev Cmd
+    - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        toolset: 14.4x   # 2022最新
+        toolset: 14.4x
 
     - name: Install latest CMake
       uses: lukka/get-cmake@v3.30.5
 
-    # ── ここが大事！ vcpkgでhidapiだけサクッと入れる ──
-    - name: Setup vcpkg
+    - name: Setup vcpkg and install hidapi
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg
-        vcpkgGitCommitId: 'master'   # 最新でOK（hidapiは安定してる）
+        vcpkgGitCommitId: 'master'
         vcpkgArguments: hidapi:x64-windows
+        vcpkgJSONIgnore: true  # vcpkg.jsonがなくてもOKにする
 
-    - name: Configure CMake with vcpkg toolchain
+    - name: Configure CMake
       run: |
         cmake -S . -B build ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DCMAKE_TOOLCHAIN_FILE=${{ runner.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ^
           -DVCPKG_TARGET_TRIPLET=x64-windows ^
-          -DCMAKE_CXX_FLAGS="/MP"
+          -DCMAKE_CXX_FLAGS="/MP" ^
+          -DCMAKE_VERBOSE_MAKEFILE=ON
 
-    - name: Build
+    - name: Build project
       run: cmake --build build --config Release --parallel 4
 
-    - name: Upload artifacts (optional)
+    - name: Upload build artifacts
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: JoyConPlusPlus-build
-        path: build/**/*
+        name: JoyConPlusPlus-build-artifacts
+        path: |
+          build/**/*
+        if-no-files-found: warn
