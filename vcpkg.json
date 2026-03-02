@@ -1,6 +1,8 @@
 {
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "joyconplusplus",
   "version-string": "0.1",
+  "builtin-baseline": "5b1214315250939257ef5d62ecdcbca18cf4fb1c",
   "dependencies": [
     "hidapi"
   ]
