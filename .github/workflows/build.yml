@@ -19,8 +19,7 @@ jobs:
 
     - name: Setup MSVC environment
       uses: ilammy/msvc-dev-cmd@v1
-      with:
-        toolset: 14.4x
+      # toolset: 削除！ これでデフォルト（最新安定）を使う
 
     - name: Install latest CMake
       uses: lukka/get-cmake@v3.30.5
@@ -31,7 +30,7 @@ jobs:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg
         vcpkgGitCommitId: 'master'
         vcpkgArguments: hidapi:x64-windows
-        vcpkgJSONIgnore: true  # vcpkg.jsonがなくてもOKにする
+        vcpkgJSONIgnore: true
 
     - name: Configure CMake
       run: |
