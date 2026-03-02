@@ -1,57 +1,50 @@
 name: Build JoyConPlusPlus
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Install HIDAPI
-        run: vcpkg install hidapi:x64-windows
+    - name: Setup MSVC Dev Cmd
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: 14.4x   # 2022最新
 
-      - name: Setup Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
+    - name: Install latest CMake
+      uses: lukka/get-cmake@v3.30.5
 
-      - name: 🚀 Hyper-Robust Build (Case-Insensitive Search)
-        shell: pwsh
-        run: |
-          echo "--- 🔍 HIDAPIの捜索を再開します (大文字小文字無視モード) ---"
-          # hidapi.h を再帰的に検索
-          $foundFile = Get-ChildItem -Path C:\ -Filter "hidapi.h" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          
-          if ($null -eq $foundFile) {
-              Write-Error "❌ hidapi.h がサーバー内に存在しません。"; exit 1
-          }
+    # ── ここが大事！ vcpkgでhidapiだけサクッと入れる ──
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: ${{ runner.workspace }}/vcpkg
+        vcpkgGitCommitId: 'master'   # 最新でOK（hidapiは安定してる）
+        vcpkgArguments: hidapi:x64-windows
 
-          # フォルダパスを取得
-          $INC_PATH = $foundFile.DirectoryName
-          echo "✅ インクルードパス発見: $INC_PATH"
+    - name: Configure CMake with vcpkg toolchain
+      run: |
+        cmake -S . -B build ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_TOOLCHAIN_FILE=${{ runner.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ^
+          -DVCPKG_TARGET_TRIPLET=x64-windows ^
+          -DCMAKE_CXX_FLAGS="/MP"
 
-          # libパスを動的に生成 (includeの親フォルダにある lib を探す)
-          $parent = Split-Path -Parent $INC_PATH
-          $LIB_PATH = Join-Path $parent "lib"
-          
-          if (-not (Test-Path $LIB_PATH)) {
-              # もし include/hidapi.h の形なら
-              $LIB_PATH = Join-Path (Split-Path -Parent $parent) "lib"
-          }
-          echo "📂 LIBパス確定: $LIB_PATH"
+    - name: Build
+      run: cmake --build build --config Release --parallel 4
 
-          echo "--- 🔨 コンパイルを実行します ---"
-          # cl.exe に全ての情報を叩き込む
-          & cl.exe /EHsc /O2 /std:c++17 /W3 /utf-8 `
-            -I"$INC_PATH" `
-            JoyCon++.cpp src/*.cpp /Fe:JoyConPlusPlus.exe `
-            /link /LIBPATH:"$LIB_PATH" `
-            hidapi.lib windowsapp.lib Advapi32.lib User32.lib Ole32.lib Shell32.lib runtimeobject.lib Bthprops.lib
-
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          echo "🎉 ついにビルドに成功しました！"
-
-      - name: Upload result
-        uses: actions/upload-artifact@v4
-        with:
-          name: JoyConPlusPlus-Exe
-          path: ./*.exe
+    - name: Upload artifacts (optional)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: JoyConPlusPlus-build
+        path: build/**/*
